@@ -8,6 +8,8 @@ Validation contract (all enforced in main() before writing):
   - exactly one confession, 1-199 code points, a single line (no CR/LF);
   - no leading or trailing whitespace;
   - no double spaces (single spaces only between words);
+  - no control characters (Unicode category Cc), so the entry is
+    clean UTF-8 text with no hidden bytes;
   - written with no trailing newline, so the file is the confession and
     nothing else;
   - /output is written FIRST; any copy to the repo root is guarded by
@@ -17,6 +19,7 @@ Validation contract (all enforced in main() before writing):
 
 import os
 import sys
+import unicodedata
 
 CONFESSION = (
     "The 47-page spec you asked me to read? I skimmed the headings, "
@@ -73,6 +76,11 @@ def main() -> int:
     if "  " in text:
         print("error: confession contains a double space (use single spaces)",
               file=sys.stderr)
+        return 1
+    bad = [ch for ch in text if unicodedata.category(ch) == "Cc"]
+    if bad:
+        print(f"error: confession contains control character "
+              f"U+{ord(bad[0]):04X} (category Cc)", file=sys.stderr)
         return 1
     out_dir = "/output"
     os.makedirs(out_dir, exist_ok=True)
